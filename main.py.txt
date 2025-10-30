@@ -1,0 +1,98 @@
+import os
+from telegram import (
+    Update,
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+)
+from telegram.ext import (
+    ApplicationBuilder,
+    CommandHandler,
+    CallbackQueryHandler,
+    ContextTypes,
+)
+
+# 👇 توکن ربات از محیط Replit می‌گیریم
+BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
+if not BOT_TOKEN:
+    raise ValueError("لطفاً TELEGRAM_BOT_TOKEN رو از Secrets تنظیم کنید!")
+
+# ================== متن‌ها و قیمت‌ها ==================
+texts = {
+    "menu": "👋 به فروشگاه پریمیوم خوش اومدی!\n\nیکی از گزینه‌های زیر رو انتخاب کن:",
+    "stars": (
+        "⭐ <b>استارز تلگرام</b>\n\n"
+        "<code>1 Star = 2,050T</code>\n\n"
+        "50⭐ — 102,500T\n"
+        "100⭐ — 205,000T\n"
+        "200⭐ — 410,000T\n"
+        "500⭐ — 1,025,000T\n"
+        "1K⭐ — 2,050,000T\n"
+        "2.5K⭐ — 5,125,000T\n"
+        "5K⭐ — 10,250,000T\n"
+        "10K⭐ — 20,500,000T"
+    ),
+    "premium": (
+        "💎 <b>تلگرام پریمیوم</b>\n\n"
+        "3 ماهه — 1,550,000T\n"
+        "6 ماهه — 2,120,000T\n"
+        "12 ماهه — 3,645,000T"
+    ),
+    "spotify": (
+        "🎧 <b>اسپاتیفای پریمیوم</b>\n\n"
+        "تک‌کاربره فمیلی — 350,000T\n"
+        "تک‌کاربره اختصاصی — 1,500,000T"
+    ),
+    "apple": (
+        "🍎 <b>اپل موزیک پریمیوم</b>\n\n"
+        "تک‌کاربره فمیلی — 350,000T\n"
+        "تک‌کاربره اختصاصی — 1,300,000T"
+    ),
+    "gift": "🎁 بخش گیفت تلگرام بزودی فعال میشه!",
+}
+
+# ================== دکمه‌ها ==================
+def main_menu():
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton("⭐ استارز تلگرام", callback_data="stars")],
+        [InlineKeyboardButton("💎 تلگرام پریمیوم", callback_data="premium")],
+        [InlineKeyboardButton("🎧 اسپاتیفای پریمیوم", callback_data="spotify")],
+        [InlineKeyboardButton("🍎 اپل موزیک پریمیوم", callback_data="apple")],
+        [InlineKeyboardButton("🎁 گیفت تلگرام", callback_data="gift")],
+    ])
+
+def back_button():
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton("🔙 بازگشت به منو اصلی", callback_data="menu")]
+    ])
+
+# ================== دستورات ==================
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        texts["menu"], reply_markup=main_menu(), parse_mode="HTML"
+    )
+
+async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    data = query.data
+
+    if data in texts:
+        text = texts[data]
+        keyboard = back_button() if data != "menu" else main_menu()
+        await query.edit_message_text(
+            text=text, reply_markup=keyboard, parse_mode="HTML"
+        )
+
+# ================== اجرای ربات ==================
+async def main():
+    app = ApplicationBuilder().token(BOT_TOKEN).build()
+
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CallbackQueryHandler(button_handler))
+
+    print("🤖 Bot is running...")
+    await app.run_polling()
+
+if __name__ == "__main__":
+    import asyncio
+    asyncio.run(main())
